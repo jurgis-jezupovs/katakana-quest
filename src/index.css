@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+@layer components {
+  .btn-3d {
+    @apply font-extrabold uppercase tracking-wide rounded-2xl select-none transition-transform active:translate-y-[2px];
+    box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.2);
+  }
+  .btn-3d:active {
+    box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.2);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Hide scrollbars but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
