@@ -2,6 +2,7 @@
 // Gracefully degrades when no Japanese voice is available.
 
 import { BY_KANA } from '../data/katakana.js'
+import { BY_WORD } from '../data/words.js'
 
 let jaVoice = null
 let fallbackVoice = null
@@ -60,7 +61,7 @@ export function speak(text, { rate = 0.85 } = {}) {
     // No Japanese voice on this device/browser: read the romaji with the
     // default voice instead of staying silent (common on Windows Firefox).
     if (!voice) {
-      const romaji = BY_KANA[text]?.romaji
+      const romaji = BY_KANA[text]?.romaji ?? BY_WORD[text]?.romaji
       if (romaji) spoken = romaji
       voice = fallbackVoice
       lang = fallbackVoice?.lang || 'en-US'

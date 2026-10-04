@@ -1,4 +1,5 @@
 import { BY_KANA } from '../data/katakana.js'
+import { WORDS } from '../data/words.js'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -50,6 +51,54 @@ function makeMatch(kanas) {
   }
 }
 
+// Words whose every character is already in the pool (ー is always allowed).
+function availableWords(pool, mustInclude = null) {
+  const known = new Set(pool)
+  return WORDS.filter(
+    (w) =>
+      [...w.word].every((c) => c === 'ー' || known.has(c)) &&
+      (!mustInclude || [...w.word].some((c) => mustInclude.has(c)))
+  )
+}
+
+function makeWordSelect(w, words, type) {
+  const others = sample(words.filter((x) => x.word !== w.word), 3)
+  const isKana = type === 'selectWord'
+  const options = shuffle([w, ...others].map((x) => (isKana ? x.word : x.romaji)))
+  return {
+    id: rid(),
+    type,
+    kana: w.word,
+    romaji: w.romaji,
+    meaning: w.meaning,
+    options,
+    answer: isKana ? w.word : w.romaji,
+  }
+}
+
+function makeWordMatch(words) {
+  const chosen = sample(words, Math.min(4, words.length))
+  return {
+    id: rid(),
+    type: 'match',
+    pairs: chosen.map((w) => ({ kana: w.word, romaji: w.romaji })),
+  }
+}
+
+// Word exercises: read a katakana word, or find it from its romaji.
+function wordExercises(pool, focus) {
+  const focusSet = new Set(focus)
+  const all = availableWords(pool)
+  if (all.length < 3) return { quiz: [], match: null }
+  const preferred = availableWords(pool, focusSet)
+  const source = preferred.length ? preferred : all
+  const quiz = sample(source, Math.min(2, source.length)).map((w, i) =>
+    makeWordSelect(w, all, i % 2 === 0 ? 'selectWord' : 'selectWordRomaji')
+  )
+  const matchSource = source.length >= 3 ? source : all
+  return { quiz, match: makeWordMatch(matchSource) }
+}
+
 let _id = 0
 function rid() {
   return `ex_${_id++}`
@@ -82,12 +131,16 @@ export function generateLesson(targets, pool, opts = {}) {
   const practiceTargets = [...new Set([...targets, ...review])]
   sample(practiceTargets, Math.min(2, practiceTargets.length)).forEach((k) => quiz.push(makeType(k)))
 
+  const words = wordExercises(distractorPool, targets)
+  quiz.push(...words.quiz)
+
   const sequence = shuffle(quiz)
 
   const matchTargets = [...new Set([...targets, ...review])]
   if (matchTargets.length >= 3) {
     sequence.splice(Math.floor(sequence.length / 2), 0, makeMatch(matchTargets))
   }
+  if (words.match) sequence.push(words.match)
 
   return [...ex, ...sequence]
 }
@@ -107,6 +160,9 @@ export function generateReview(kanas, pool, count = 12) {
     i++
   }
   if (focus.length >= 3) out.splice(2, 0, makeMatch(focus))
+  const words = wordExercises(distractorPool, focus)
+  out.push(...words.quiz)
+  if (words.match) out.push(words.match)
   return out
 }
 

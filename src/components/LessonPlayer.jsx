@@ -94,6 +94,10 @@ function Exercise({ ex, onResult, onNext }) {
       return <SelectExercise ex={ex} mode="romaji" onResult={onResult} onNext={onNext} />
     case 'selectKatakana':
       return <SelectExercise ex={ex} mode="kana" onResult={onResult} onNext={onNext} />
+    case 'selectWord':
+      return <SelectExercise ex={ex} mode="word" onResult={onResult} onNext={onNext} />
+    case 'selectWordRomaji':
+      return <SelectExercise ex={ex} mode="wordRomaji" onResult={onResult} onNext={onNext} />
     case 'listen':
       return <SelectExercise ex={ex} mode="listen" onResult={onResult} onNext={onNext} />
     case 'typeRomaji':
@@ -143,17 +147,24 @@ function Intro({ ex, onNext }) {
 
 // ---------------- Select exercises ----------------
 
+const kanasOf = (text) => [...new Set([...text].filter((c) => BY_KANA[c]))]
+
 function SelectExercise({ ex, mode, onResult, onNext }) {
   const [selected, setSelected] = useState(null)
   const [checked, setChecked] = useState(false)
   const correct = checked && selected === ex.answer
+  const isWord = mode === 'word' || mode === 'wordRomaji'
 
   const prompt =
     mode === 'romaji'
       ? { big: ex.kana, label: 'What sound does this make?' }
       : mode === 'kana'
         ? { big: ex.romaji, label: 'Which character is this?' }
-        : { big: null, label: 'Which character did you hear?' }
+        : mode === 'word'
+          ? { big: ex.romaji, label: 'Which word is this?', sub: ex.meaning }
+          : mode === 'wordRomaji'
+            ? { big: ex.kana, label: 'How do you read this word?', sub: ex.meaning }
+            : { big: null, label: 'Which character did you hear?' }
 
   useEffect(() => {
     if (mode === 'listen') {
@@ -166,7 +177,7 @@ function SelectExercise({ ex, mode, onResult, onNext }) {
     if (selected == null) return
     const ok = selected === ex.answer
     setChecked(true)
-    onResult(ok, [ex.kana])
+    onResult(ok, isWord ? kanasOf(ex.kana) : [ex.kana])
   }
 
   return (
@@ -184,22 +195,25 @@ function SelectExercise({ ex, mode, onResult, onNext }) {
           </button>
         </div>
       ) : (
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col items-center mb-8">
           <button
-            onClick={() => mode === 'romaji' && speak(ex.kana)}
-            className="text-[88px] leading-none font-jp text-duo-ink dark:text-gray-100"
+            onClick={() => (mode === 'romaji' || mode === 'wordRomaji') && speak(ex.kana)}
+            className={`leading-none text-duo-ink dark:text-gray-100 ${
+              isWord ? 'text-5xl py-2' : 'text-[88px]'
+            } ${mode === 'word' ? 'font-extrabold' : 'font-jp'}`}
           >
             {prompt.big}
           </button>
+          {prompt.sub && <div className="mt-2 text-gray-500 dark:text-gray-400 font-bold">{prompt.sub}</div>}
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={isWord ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-2 gap-3'}>
         {ex.options.map((opt) => {
           const isSel = selected === opt
           const showCorrect = checked && opt === ex.answer
           const showWrong = checked && isSel && opt !== ex.answer
-          const isKana = mode !== 'romaji'
+          const isKana = mode !== 'romaji' && mode !== 'wordRomaji'
           return (
             <button
               key={opt}
@@ -310,7 +324,7 @@ function MatchExercise({ ex, onResult, onNext }) {
     if (l === r) {
       const nm = [...matched, l]
       setMatched(nm)
-      onResult(true, [l])
+      onResult(true, kanasOf(l))
       setSelLeft(null)
       setSelRight(null)
       if (nm.length === ex.pairs.length) {
@@ -318,7 +332,7 @@ function MatchExercise({ ex, onResult, onNext }) {
       }
     } else {
       setWrongPair({ l, r })
-      onResult(false, [l, r])
+      onResult(false, [...new Set([...kanasOf(l), ...kanasOf(r)])])
       setTimeout(() => {
         setWrongPair(null)
         setSelLeft(null)
@@ -360,7 +374,9 @@ function MatchExercise({ ex, onResult, onNext }) {
                 speak(item.key)
               }}
               disabled={matched.includes(item.key)}
-              className={`rounded-2xl border-2 p-4 text-4xl font-jp font-extrabold transition-colors ${tileClass(item.key, selLeft, 'l')}`}
+              className={`rounded-2xl border-2 p-4 font-jp font-extrabold transition-colors ${
+                item.label.length > 2 ? 'text-2xl' : 'text-4xl'
+              } ${tileClass(item.key, selLeft, 'l')}`}
             >
               {item.label}
             </button>
@@ -372,7 +388,9 @@ function MatchExercise({ ex, onResult, onNext }) {
               key={'r' + item.key}
               onClick={() => clickRight(item.key)}
               disabled={matched.includes(item.key)}
-              className={`rounded-2xl border-2 p-4 text-2xl font-extrabold transition-colors ${tileClass(item.key, selRight, 'r')}`}
+              className={`rounded-2xl border-2 p-4 font-extrabold transition-colors break-all ${
+                item.label.length > 4 ? 'text-lg' : 'text-2xl'
+              } ${tileClass(item.key, selRight, 'r')}`}
             >
               {item.label}
             </button>
