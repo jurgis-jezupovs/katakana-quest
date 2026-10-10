@@ -81,7 +81,7 @@ export default function App() {
     <div className="h-full bg-gray-50 dark:bg-gray-900 text-duo-ink dark:text-gray-100 flex flex-col">
       <TopBar streak={progress.state.streak} xp={progress.state.xp} />
 
-      <main className="flex-1 overflow-y-auto no-scrollbar">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain no-scrollbar">
         {view === 'home' && (
           <Home
             progress={progress}

@@ -135,7 +135,7 @@ function doSpeak(text, rate) {
   synth.speak(u)
 }
 
-export function speak(text, { rate = 0.6 } = {}) {
+export function speak(text, { rate = 0.4 } = {}) {
   if (!supported || !text) return false
   if (!voicesLoaded) loadVoices()
   const synth = window.speechSynthesis
